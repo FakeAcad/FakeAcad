@@ -82,6 +82,6 @@ Each university index holds stats about the quality of its discourse: an honesty
 
 ## Useful Links
 
-* [Organization](https://github.com/fake-academic-discourse/)
+* [Organization](https://github.com/FakeAcad/)
 
-* [FakeAcad](https://github.com/fake-academic-discourse/FakeAcad)
+* [FakeAcad](https://github.com/FakeAcad/FakeAcad)
