@@ -5,7 +5,7 @@
             width: 30%">
 
 |    | | |
-|--------------|:-----:|-----------:|
+|--------------|:-----:|:-----------:|
 | Lab Teacher |  Radu Ciobanu |
 | Devs | Maria Sfîrăială, 341C3 | Albert-Timotei Daraban, 341C3 |
 
@@ -68,7 +68,7 @@ Each university index holds stats about the quality of its discourse: an honesty
 ## Responsabilities
 
 | Responsability | Maria Sfîrăială | Albert-Timotei Daraban |
-|--------------|:-----:|-----------:|
+|--------------|:-----:|:-----------:|
 | Kong API | x |  |
 | Auth Service | x | x |
 | Business Logic Service | x | x |
