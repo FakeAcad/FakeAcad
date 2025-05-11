@@ -32,7 +32,7 @@ services:
     routes:
       - name: business-logic-route
         paths:
-          - /api/(?!authorization)
+          - /api/fakeacad
         strip_path: false
         regex_priority: 200
     plugins:
@@ -59,16 +59,10 @@ services:
           claims_to_verify:
             - exp
             - nbf
-
-  - name: io-service
-    url: http://io-service:80
+  - name: swagger-ui
+    url: http://business-logic:80/swagger
     routes:
-      - name: io-service-route
+      - name: swagger-ui-route
         paths:
-          - /internal/io
-        strip_path: true
-    plugins:
-      - name: ip-restriction
-        config:
-          allow:
-            - 172.16.0.0/12 
+          - /api/swagger
+        strip_path: false

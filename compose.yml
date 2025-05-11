@@ -1,16 +1,9 @@
 services:
-  # Kong API services
   kong:
     image: kong:3.9.0
-    depends_on:
-      - kong-db
-      - kong-migration
     environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-db
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kong
-      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_DATABASE: off
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
@@ -22,37 +15,20 @@ services:
       - 8001:8001
       - 8444:8444
     volumes:
-      - ./kong.yml:/etc/kong/kong.yml:ro
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml
+    networks:
+      - kong-auth
+      - kong-business
 
-  kong-migration:
-    image: kong:3.9.0
-    command: kong migrations bootstrap
-    depends_on:
-      - kong-db
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-db
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kong
-      KONG_PG_DATABASE: kong
-    restart: on-failure
-
-  kong-db:
-    image: postgres:13.2-alpine
-    environment:
-      POSTGRES_USER: kong
-      POSTGRES_DB: kong
-      POSTGRES_PASSWORD: kong
-    volumes:
-      - kong-db-vol:/var/lib/postgresql/data
-
-  # Backend services
   business-logic:
     depends_on:
       - io-service
     build: 
       dockerfile: FakeAcad.BusinessLogic/Dockerfile
       context: backend
+    networks:
+      - kong-business
+      - backend
 
   auth:
     depends_on:
@@ -60,6 +36,9 @@ services:
     build:
       dockerfile: FakeAcad.AuthService/Dockerfile
       context: backend
+    networks:
+      - kong-auth
+      - backend
 
   io-service:
     depends_on:
@@ -67,6 +46,9 @@ services:
     build:
       dockerfile: FakeAcad.IOManager/Dockerfile
       context: backend
+    networks:
+      - io-database
+      - backend
 
   backend-app-db:
     image: postgres:13.2-alpine
@@ -78,6 +60,8 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - app-db-vol:/var/lib/postgresql/data
+    networks:
+      - io-database
 
 volumes:
   kong-db-vol:
@@ -85,3 +69,12 @@ volumes:
   app-db-vol:
     driver: local
 
+networks:
+  io-database:
+    driver: bridge
+  backend:
+    driver: bridge
+  kong-auth:
+    driver: bridge
+  kong-business:
+    driver: bridge
