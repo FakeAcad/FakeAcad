@@ -2,15 +2,6 @@ _format_version: "2.1"
 _transform: true
 
 services:
-  - name: auth-service
-    url: http://auth:80
-    routes:
-      - name: auth-route
-        paths:
-          - /api/Authorization
-        strip_path: false
-        regex_priority: 300
-
   - name: business-logic-service
     url: http://business-logic:80
     routes:
@@ -19,3 +10,8 @@ services:
           - ~/api/
         strip_path: false
         regex_priority: 200
+      - name: swagger-route
+        paths:
+          - /swagger
+        strip_path: false
+        regex_priority: 100

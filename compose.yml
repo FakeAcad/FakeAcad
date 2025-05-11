@@ -17,7 +17,6 @@ services:
     volumes:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml
     networks:
-      - kong-auth
       - kong-business
 
   business-logic:
@@ -41,7 +40,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     networks:
-      - kong-auth
       - backend
 
   io-service:
@@ -79,8 +77,6 @@ networks:
   io-database:
     driver: bridge
   backend:
-    driver: bridge
-  kong-auth:
     driver: bridge
   kong-business:
     driver: bridge
