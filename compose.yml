@@ -26,6 +26,8 @@ services:
     build: 
       dockerfile: FakeAcad.BusinessLogic/Dockerfile
       context: backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - kong-business
       - backend
@@ -36,6 +38,8 @@ services:
     build:
       dockerfile: FakeAcad.AuthService/Dockerfile
       context: backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - kong-auth
       - backend
@@ -46,6 +50,8 @@ services:
     build:
       dockerfile: FakeAcad.IOManager/Dockerfile
       context: backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - io-database
       - backend
