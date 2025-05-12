@@ -18,8 +18,12 @@ services:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml
     networks:
       - kong-business
+    deploy:
+      mode: replicated
+      replicas: 1
 
   business-logic:
+    image: business-logic
     depends_on:
       - io-service
     build: 
@@ -30,8 +34,12 @@ services:
     networks:
       - kong-business
       - backend
+    deploy:
+      mode: replicated
+      replicas: 1
 
   auth:
+    image: auth
     depends_on:
       - io-service
     build:
@@ -41,8 +49,12 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - backend
+    deploy:
+      mode: replicated
+      replicas: 1
 
   io-service:
+    image: io-service
     depends_on:
       - backend-app-db
     build:
@@ -53,6 +65,9 @@ services:
     networks:
       - io-database
       - backend
+    deploy:
+      mode: replicated
+      replicas: 1
 
   backend-app-db:
     image: postgres:13.2-alpine
@@ -66,6 +81,9 @@ services:
       - app-db-vol:/var/lib/postgresql/data
     networks:
       - io-database
+    deploy:
+      mode: replicated
+      replicas: 1
 
   pgadmin:
     image: dpage/pgadmin4
@@ -82,6 +100,38 @@ services:
       - pgadmin-vol:/var/lib/pgadmin
     networks:
       - io-database
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  agent:
+    image: portainer/agent:2.11.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - agent
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
+
+  portainer:
+    image: portainer/portainer-ce:2.11.1
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    ports:
+      - "9443:9443"
+      - "9000:9000"
+      - "10000:8000"
+    volumes:
+      - portainer-vol:/data
+    networks:
+      - agent
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
 
 volumes:
   kong-db-vol:
@@ -90,11 +140,15 @@ volumes:
     driver: local
   pgadmin-vol:
     driver: local
+  portainer-vol:
+    driver: local
 
 networks:
   io-database:
-    driver: bridge
+    driver: overlay
   backend:
-    driver: bridge
+    driver: overlay
   kong-business:
-    driver: bridge
+    driver: overlay
+  agent:
+    driver: overlay
