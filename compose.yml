@@ -31,9 +31,15 @@ services:
       context: backend
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    logging:
+      driver: loki
+      options:
+        loki-url: http://host.docker.internal:3100/loki/api/v1/push
+        loki-external-labels: job=business-logic,owner=FakeAcad,environment=development
     networks:
       - kong-business
       - backend
+      - logging
     deploy:
       mode: replicated
       replicas: 1
@@ -47,8 +53,14 @@ services:
       context: backend
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    logging:
+      driver: loki
+      options:
+        loki-url: http://host.docker.internal:3100/loki/api/v1/push
+        loki-external-labels: job=auth,owner=FakeAcad,environment=development
     networks:
       - backend
+      - logging
     deploy:
       mode: replicated
       replicas: 1
@@ -62,9 +74,15 @@ services:
       context: backend
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    logging:
+      driver: loki
+      options:
+        loki-url: http://host.docker.internal:3100/loki/api/v1/push
+        loki-external-labels: job=io-service,owner=FakeAcad,environment=development
     networks:
       - io-database
       - backend
+      - logging
     deploy:
       mode: replicated
       replicas: 1
@@ -77,17 +95,22 @@ services:
       POSTGRES_USER: admin
       POSTGRES_DB: fakeacad-db
       POSTGRES_PASSWORD: password
+    logging:
+      driver: loki
+      options:
+        loki-url: http://host.docker.internal:3100/loki/api/v1/push
+        loki-external-labels: job=backend-app-db,owner=FakeAcad,environment=development
     volumes:
       - app-db-vol:/var/lib/postgresql/data
     networks:
       - io-database
+      - logging
     deploy:
       mode: replicated
       replicas: 1
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin
     restart: always
     ports:
       - 8002:80
@@ -133,6 +156,39 @@ services:
       placement:
         constraints: [node.role == manager]
 
+  loki:
+    image: grafana/loki
+    volumes:
+      - ./loki.yml:/etc/config/loki.yml
+    entrypoint:
+      - /usr/bin/loki
+      - -config.file=/etc/config/loki.yml
+    ports:
+      - 3100:3100
+    networks:
+      - logging
+      - visualizing
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana-vol:/var/lib/grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - loki
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - visualizing
+    
+
 volumes:
   kong-db-vol:
     driver: local
@@ -141,6 +197,8 @@ volumes:
   pgadmin-vol:
     driver: local
   portainer-vol:
+    driver: local
+  grafana-vol:
     driver: local
 
 networks:
@@ -151,4 +209,8 @@ networks:
   kong-business:
     driver: overlay
   agent:
+    driver: overlay
+  logging:
+    driver: overlay
+  visualizing:
     driver: overlay
