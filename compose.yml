@@ -2,7 +2,7 @@ services:
   kong:
     image: kong:3.9.0
     environment:
-      KONG_DATABASE: off
+      KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
@@ -67,10 +67,28 @@ services:
     networks:
       - io-database
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    ports:
+      - 8002:80
+    depends_on:
+      - backend-app-db
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.admin
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-vol:/var/lib/pgadmin
+    networks:
+      - io-database
+
 volumes:
   kong-db-vol:
     driver: local
   app-db-vol:
+    driver: local
+  pgadmin-vol:
     driver: local
 
 networks:
