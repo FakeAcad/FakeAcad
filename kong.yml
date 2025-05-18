@@ -2,12 +2,13 @@ _format_version: "2.1"
 _transform: true
 
 services:
+
   - name: business-logic-service
     url: http://business-logic:80
     routes:
       - name: business-logic-route
         paths:
-          - ~/api/
+          - /api
         strip_path: false
         regex_priority: 200
       - name: swagger-route
@@ -15,3 +16,32 @@ services:
           - /swagger
         strip_path: false
         regex_priority: 100
+
+  - name: grafana-service
+    url: http://grafana:3000
+    routes:
+      - name: grafana-route
+        paths:
+          - /grafana
+        strip_path: false
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Forwarded-Prefix:/grafana
+              - X-Forwarded-Proto:http
+
+  - name: pgadmin-service
+    url: http://pgadmin:80
+    routes:
+      - name: pgadmin-route
+        paths:
+          - /pgadmin
+        strip_path: false
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Script-Name:/pgadmin

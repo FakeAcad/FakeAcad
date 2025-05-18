@@ -18,111 +18,118 @@ services:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml
     networks:
       - kong-business
+      - kong-pgadmin
+      - kong-grafana
     deploy:
       mode: replicated
       replicas: 1
 
   business-logic:
-    image: business-logic
-    depends_on:
-      - io-service
-    build: 
-      dockerfile: FakeAcad.BusinessLogic/Dockerfile
-      context: backend
+    image: earthbert/idp-business-logic
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    logging:
-      driver: loki
-      options:
-        loki-url: http://localhost:3100/loki/api/v1/push
-        loki-external-labels: job=business-logic,owner=FakeAcad,environment=development
     networks:
       - kong-business
       - backend
       - logging
-    deploy:
-      mode: replicated
-      replicas: 1
-
-  auth:
-    image: auth
-    depends_on:
-      - io-service
-    build:
-      dockerfile: FakeAcad.AuthService/Dockerfile
-      context: backend
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
     logging:
       driver: loki
       options:
-        loki-url: http://localhost:3100/loki/api/v1/push
-        loki-external-labels: job=auth,owner=FakeAcad,environment=development
+        loki-url: http://loki:3100/loki/api/v1/push
+        loki-retries: "5"
+        loki-batch-size: "400" 
+        loki-timeout: "10s"
+        max-size: "10m"
+        loki-external-labels: job=business-logic,owner=FakeAcad,environment=development
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+
+  auth:
+    image: earthbert/idp-auth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - backend
       - logging
-    deploy:
-      mode: replicated
-      replicas: 1
-
-  io-service:
-    image: io-service
-    depends_on:
-      - backend-app-db
-    build:
-      dockerfile: FakeAcad.IOManager/Dockerfile
-      context: backend
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
     logging:
       driver: loki
       options:
-        loki-url: http://localhost:3100/loki/api/v1/push
-        loki-external-labels: job=io-service,owner=FakeAcad,environment=development
+        loki-url: http://loki:3100/loki/api/v1/push
+        loki-retries: "5"
+        loki-batch-size: "400" 
+        loki-timeout: "10s"
+        max-size: "10m"
+        loki-external-labels: job=auth,owner=FakeAcad,environment=development
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+
+  io-service:
+    image: earthbert/idp-io-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - io-database
       - backend
       - logging
+    logging:
+      driver: loki
+      options:
+        loki-url: http://loki:3100/loki/api/v1/push
+        loki-retries: "5"
+        loki-batch-size: "400" 
+        loki-timeout: "10s"
+        max-size: "10m"
+        loki-external-labels: job=io-service,owner=FakeAcad,environment=development
     deploy:
-      mode: replicated
-      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
 
   backend-app-db:
     image: postgres:13.2-alpine
-    ports:
-      - 5432:5432
     environment:
       POSTGRES_USER: admin
       POSTGRES_DB: fakeacad-db
       POSTGRES_PASSWORD: password
-    logging:
-      driver: loki
-      options:
-        loki-url: http://localhost:3100/loki/api/v1/push
-        loki-external-labels: job=backend-app-db,owner=FakeAcad,environment=development
     volumes:
       - app-db-vol:/var/lib/postgresql/data
     networks:
       - io-database
       - logging
+      - pgadmin-database
+    logging:
+      driver: loki
+      options:
+        loki-url: http://loki:3100/loki/api/v1/push
+        loki-retries: "5"
+        loki-batch-size: "400" 
+        loki-timeout: "10s"
+        max-size: "10m"
+        loki-external-labels: job=backend-app-db,owner=FakeAcad,environment=development
     deploy:
-      mode: replicated
-      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
 
   pgadmin:
     image: dpage/pgadmin4
     restart: always
-    ports:
-      - 8002:80
-    depends_on:
-      - backend-app-db
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.admin
       PGADMIN_DEFAULT_PASSWORD: admin
     volumes:
       - pgadmin-vol:/var/lib/pgadmin
     networks:
-      - io-database
+      - kong-pgadmin
+      - pgadmin-database
     deploy:
       mode: replicated
       replicas: 1
@@ -163,8 +170,6 @@ services:
     entrypoint:
       - /usr/bin/loki
       - -config.file=/etc/config/loki.yml
-    ports:
-      - 3100:3100
     networks:
       - logging
       - visualizing
@@ -176,10 +181,9 @@ services:
     image: grafana/grafana
     volumes:
       - grafana-vol:/var/lib/grafana
-    ports:
-      - 3000:3000
-    depends_on:
-      - loki
+    environment:
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:8000/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     deploy:
       mode: replicated
       replicas: 1
@@ -187,7 +191,7 @@ services:
         constraints: [node.role == manager]
     networks:
       - visualizing
-    
+      - kong-grafana
 
 volumes:
   kong-db-vol:
@@ -207,6 +211,12 @@ networks:
   backend:
     driver: overlay
   kong-business:
+    driver: overlay
+  kong-pgadmin:
+    driver: overlay
+  kong-grafana:
+    driver: overlay
+  pgadmin-database:
     driver: overlay
   agent:
     driver: overlay

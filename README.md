@@ -57,9 +57,10 @@ Each university index holds stats about the quality of its discourse: an honesty
 
     * visualise the database in a user-friendly manner
 
-1. `Prometheus`
+1. `Loki`
 
-    * collect performance and logging data
+    * collect logging data
+    * **Important** you must have Loki docker driver installed
 
 1. `Grafana`
 
