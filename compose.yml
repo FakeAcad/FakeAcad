@@ -125,8 +125,12 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.admin
       PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: 'True'
+      PGPASS_FILE: /var/lib/pgadmin/.pgpass
     volumes:
       - pgadmin-vol:/var/lib/pgadmin
+      - ./pgadmin/db.json:/pgadmin4/servers.json
+      - ./pgadmin/.pgpass:/var/lib/pgadmin/.pgpass
     networks:
       - kong-pgadmin
       - pgadmin-database
